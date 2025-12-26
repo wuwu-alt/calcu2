@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculatrice UPW</title>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable@11.1.0/dist/handsontable.full.min.css">
+
+<style>
+/* ===================== BASE ===================== */
+:root {
+  --bg-light: #f5f5f5;
+  --bg-dark: #121212;
+  --container-light: #ddd;
+  --container-dark: #1e1e1e;
+  --text-light: #222;
+  --text-dark: #e0e0e0;
+  --table-bg-light: #fff;
+  --table-bg-dark: #1b1b1b;
+  --border-light: #999;
+  --border-dark: #444;
+  --header-bg-light: #eee;
+  --header-bg-dark: #2a2a2a;
+  --params-row-bg: #8A8684;
+  --params-row-text: #000;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background: var(--bg-light);
+  color: var(--text-light);
+  padding: 20px;
+  margin: 0;
+  transition: background 0.4s ease, color 0.4s ease;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  max-width: 1500px;
+  margin: 0 auto 20px;
+  background: var(--container-light);
+  padding: 10px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  transition: background 0.4s ease;
+}
+
+/* ===================== HEADER ===================== */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 1.5em;
+}
+
+/* ===================== SWITCH THEME ===================== */
+.switch {
+  position: relative;
+  width: 60px;
+  height: 30px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  inset: 0;
+  background: #bbb;
+  border-radius: 30px;
+  transition: background 0.4s ease;
+  cursor: pointer;
+}
+
+.slider::before {
+  content: "☀️";
+  position: absolute;
+  height: 24px;
+  width: 24px;
+  left: 3px;
+  bottom: 3px;
+  background: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: transform 0.4s ease;
+}
+
+input:checked + .slider {
+  background: #4caf50;
+}
+
+input:checked + .slider::before {
+  transform: translateX(30px);
+  content: "🌙";
+}
+
+/* ===================== TABLEAUX ===================== */
+.handsontable {
+  border: 1px solid var(--border-light);
+  background: var(--table-bg-light);
+}
+
+.handsontable td,
+.handsontable th {
+  border: 1px solid var(--border-light) !important;
+  color: var(--text-light);
+}
+
+.handsontable thead th {
+  font-weight: bold;
+  background: var(--header-bg-light);
+}
+
+/* Ligne unique du tableau "Paramètres" */
+#hot-simple tbody tr td {
+  background-color: var(--params-row-bg) !important;
+  color: var(--params-row-text) !important;
+}
+
+/* ===================== LISTES DÉROULANTES ===================== */
+.handsontable .htAutocompleteArrow {
+  color: var(--text-light);
+}
+
+.handsontable .htDropdownMenu,
+.handsontable .listbox {
+  background: #e0e0e0 !important;
+}
+
+.handsontable .listbox .ht_master table td {
+  background: #e0e0e0 !important;
+  color: #000 !important;
+}
+
+.handsontable .listbox .ht_master table td.current,
+.handsontable .listbox .ht_master table td:hover {
+  background: #c0c0c0 !important;
+  color: #000 !important;
+}
+
+.handsontable .listbox .ht_master table tr:nth-child(1) td,
+.handsontable .listbox .ht_master table tr:nth-child(2) td {
+  background: #e0e0e0 !important;
+  color: #000 !important;
+}
+
+/* ===================== PALETTES CLAIRES ===================== */
+.civile-nord-light  { background: #e3f2fd !important; }
+.civile-nord-dark   { background: #bbdefb !important; }
+.civile-est-light   { background: #e8f5e9 !important; }
+.civile-est-dark    { background: #c8e6c9 !important; }
+.civile-ouest-light { background: #fff3e0 !important; }
+.civile-ouest-dark  { background: #ffe0b2 !important; }
+.civile-sud-light   { background: #fce4ec !important; }
+.civile-sud-dark    { background: #f8bbd0 !important; }
+
+.entreprise-nord-light { background: #ede7f6 !important; }
+.entreprise-nord-dark  { background: #d1c4e9 !important; }
+.entreprise-sud-light  { background: #e0f2f1 !important; }
+.entreprise-sud-dark   { background: #b2dfdb !important; }
+
+.recharge-nord-light { background: #f3e5f5 !important; }
+.recharge-nord-dark  { background: #e1bee7 !important; }
+.recharge-sud-light  { background: #fffde7 !important; }
+.recharge-sud-dark   { background: #fff9c4 !important; }
+
+/* ===================== MODE SOMBRE ===================== */
+body.dark-mode {
+  background: var(--bg-dark);
+  color: var(--text-dark);
+}
+
+body.dark-mode .container {
+  background: var(--container-dark);
+}
+
+body.dark-mode .handsontable {
+  background: var(--table-bg-dark);
+  border: 1px solid var(--border-dark);
+}
+
+body.dark-mode .handsontable td,
+body.dark-mode .handsontable th {
+  border: 1px solid var(--border-dark) !important;
+  color: var(--text-dark) !important;
+}
+
+body.dark-mode .handsontable thead th {
+  background: var(--header-bg-dark);
+}
+
+body.dark-mode .handsontable .htAutocompleteArrow {
+  color: var(--text-dark);
+}
+
+body.dark-mode #hot-simple tbody tr td {
+  background-color: var(--params-row-bg) !important;
+  color: var(--params-row-text) !important;
+}
+
+body.dark-mode .handsontable .htDropdownMenu,
+body.dark-mode .handsontable .listbox {
+  background: #e0e0e0 !important;
+}
+
+body.dark-mode .handsontable .listbox .ht_master table td {
+  background: #e0e0e0 !important;
+  color: #000 !important;
+}
+
+body.dark-mode .handsontable .listbox .ht_master table td.current,
+body.dark-mode .handsontable .listbox .ht_master table td:hover {
+  background: #c0c0c0 !important;
+  color: #000 !important;
+}
+
+body.dark-mode .handsontable .listbox .ht_master table tr:nth-child(1) td,
+body.dark-mode .handsontable .listbox .ht_master table tr:nth-child(2) td {
+  background: #e0e0e0 !important;
+  color: #000 !important;
+}
+
+/* ===================== PALETTES SOMBRES ===================== */
+body.dark-mode .civile-nord-light  { background: #1e3a5f !important; }
+body.dark-mode .civile-nord-dark   { background: #162a44 !important; }
+body.dark-mode .civile-est-light   { background: #1f4d3a !important; }
+body.dark-mode .civile-est-dark    { background: #16372a !important; }
+body.dark-mode .civile-ouest-light { background: #5a3b1a !important; }
+body.dark-mode .civile-ouest-dark  { background: #402812 !important; }
+body.dark-mode .civile-sud-light   { background: #5a1f33 !important; }
+body.dark-mode .civile-sud-dark    { background: #401625 !important; }
+
+body.dark-mode .entreprise-nord-light { background: #3b2f5f !important; }
+body.dark-mode .entreprise-nord-dark  { background: #2a2144 !important; }
+body.dark-mode .entreprise-sud-light  { background: #1f4a47 !important; }
+body.dark-mode .entreprise-sud-dark   { background: #163533 !important; }
+
+body.dark-mode .recharge-nord-light { background: #4a2a5a !important; }
+body.dark-mode .recharge-nord-dark  { background: #351d40 !important; }
+body.dark-mode .recharge-sud-light  { background: #5a571f !important; }
+body.dark-mode .recharge-sud-dark   { background: #403d16 !important; }
+
+/* ===================== RESPONSIVE ===================== */
+#hot-complex {
+  width: 100%;
+  flex: 1;
+}
+
+/* ===================== LOADING ===================== */
+#loading {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  color: white;
+}
+
+#loading.hidden {
+  display: none;
+}
+
+.spinner {
+  border: 4px solid rgba(255,255,255,0.3);
+  border-top: 4px solid white;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 15px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+</style>
+</head>
+
+<body>
+
+<div id="loading">
+  <div class="spinner"></div>
+  <div style="font-size: 1.2em;">Chargement des données...</div>
+</div>
+
+<div class="container">
+  <div class="header">
+    <h1>Paramètres</h1>
+    <label class="switch">
+      <input type="checkbox" id="themeToggle" aria-label="Basculer le mode sombre">
+      <span class="slider"></span>
+    </label>
+  </div>
+  <div id="hot-simple"></div>
+</div>
+
+<div class="container" style="height: 80vh; display: flex; flex-direction: column;">
+  <div class="header">
+    <h1>Calculatrice</h1>
+  </div>
+  <div id="hot-complex"></div>
+</div>
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+  import { getFirestore, doc, getDoc, setDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+  // ⚠️ REMPLACE CES VALEURS PAR TA CONFIGURATION FIREBASE
+  const firebaseConfig = {
+    apiKey: "TON_API_KEY",
+    authDomain: "ton-projet.firebaseapp.com",
+    projectId: "ton-projet-id",
+    storageBucket: "ton-projet.appspot.com",
+    messagingSenderId: "123456789",
+    appId: "1:123456789:web:abcdef"
+  };
+
+  console.log("🔥 Tentative d'initialisation Firebase...");
+  console.log("Configuration:", firebaseConfig);
+
+  try {
+    // Initialiser Firebase
+    const app = initializeApp(firebaseConfig);
+    console.log("✅ Firebase App initialisée");
+    
+    const db = getFirestore(app);
+    console.log("✅ Firestore initialisée");
+
+    // Exposer Firestore globalement
+    window.db = db;
+    window.firestoreFunctions = { doc, getDoc, setDoc, onSnapshot };
+    window.firebaseReady = true;
+    
+    console.log("✅ Firebase prête à l'emploi");
+  } catch (error) {
+    console.error("❌ Erreur d'initialisation Firebase:", error);
+    window.firebaseError = error.message;
+  }
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/handsontable@11.1.0/dist/handsontable.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hyperformula@2.6.0/dist/hyperformula.full.min.js"></script>
+
+<script>
+'use strict';
+
+/* ===== CONSTANTES ===== */
+const STORAGE_KEY_THEME = 'theme';
+const DOC_PARAMS = 'tableaux/params';
+const DOC_CALC = 'tableaux/calculatrice';
+const THEME_DARK = 'dark';
+const THEME_LIGHT = 'light';
+const SAVE_DEBOUNCE = 1000; // 1 seconde
+
+const DROPDOWN_ENERGIE = ['Fossile', 'Hydraulique', 'Éolienne'];
+const DROPDOWN_OBJECTIF = ['80', '85', '90', '95', '97', '100'];
+
+const HANDSONTABLE_CONFIG = {
+  licenseKey: 'non-commercial-and-evaluation',
+  className: 'htCenter htMiddle',
+  stretchH: 'all',
+  width: '100%',
+  autoRowSize: true,
+  formulas: { engine: HyperFormula }
+};
+
+/* ===== GESTION DU THÈME ===== */
+const themeToggle = document.getElementById('themeToggle');
+
+const savedTheme = localStorage.getItem(STORAGE_KEY_THEME);
+if (savedTheme === THEME_DARK) {
+  document.body.classList.add('dark-mode');
+  themeToggle.checked = true;
+}
+
+themeToggle.addEventListener('change', () => {
+  const isDark = themeToggle.checked;
+  document.body.classList.toggle('dark-mode', isDark);
+  localStorage.setItem(STORAGE_KEY_THEME, isDark ? THEME_DARK : THEME_LIGHT);
+});
+
+/* ===== DONNÉES INITIALES ===== */
+const dataCalculatriceInit = [
+  ['Civile', 'Nord', 'Base Militaire', '', '', '', '', '', ''],
+  ['', '', 'Culs nus', '', '', '', '', '', ''],
+  ['', '', 'Paleto', '', '', '', '', '', ''],
+  ['', '', 'Nord', '', '', '', '', '', ''],
+  ['', '', 'Grapeseed', '', '', '', '', '', ''],
+  ['', 'Est', 'Sandy Nord', '', '', '', '', '', ''],
+  ['', '', 'Prison', '', '', '', '', '', ''],
+  ['', '', 'NOOSE', '', '', '', '', '', ''],
+  ['', '', 'Zone Indu', '', '', '', '', '', ''],
+  ['', '', 'LSMC Civile', '', '', '', '', '', ''],
+  ['', 'Ouest', 'Ferme', '', '', '', '', '', ''],
+  ['', '', 'Vinewood', '', '', '', '', '', ''],
+  ['', '', 'Golf', '', '', '', '', '', ''],
+  ['', '', 'Kortz', '', '', '', '', '', ''],
+  ['', 'Sud', 'Centrale', '', '', '', '', '', ''],
+  ['', '', 'Rockford Plaza', '', '', '', '', '', ''],
+  ['', '', 'Grande roue', '', '', '', '', '', ''],
+  ['', '', 'MHC', '', '', '', '', '', ''],
+  ['', '', 'Aéroport', '', '', '', '', '', ''],
+  ['Entreprise', 'Nord', 'Château Marius', '', '', '', '', '', ''],
+  ['', '', 'PAWL', '', '', '', '', '', ''],
+  ['', '', 'MTP', '', '', '', '', '', ''],
+  ['', '', 'LSCS', '', '', '', '', '', ''],
+  ['', '', 'BCSO', '', '', '', '', '', ''],
+  ['', '', 'LSMC Nord', '', '', '', '', '', ''],
+  ['', '', 'Yellow Jack', '', '', '', '', '', ''],
+  ['', '', 'New Gahray Nord', '', '', '', '', '', ''],
+  ['', 'Sud', 'STONK', '', '', '', '', '', ''],
+  ['', '', 'MDR', '', '', '', '', '', ''],
+  ['', '', 'Carl Jr', '', '', '', '', '', ''],
+  ['', '', 'LSPD', '', '', '', '', '', ''],
+  ['', '', 'DeMetal', '', '', '', '', '', ''],
+  ['', '', 'LSMC', '', '', '', '', '', ''],
+  ['', '', 'Bahama Unicorn', '', '', '', '', '', ''],
+  ['', '', 'New Gahray Sud', '', '', '', '', '', ''],
+  ['', '', 'BlueBird', '', '', '', '', '', ''],
+  ['', '', 'Twitch News', '', '', '', '', '', ''],
+  ['', '', 'Bahama Mamas', '', '', '', '', '', ''],
+  ['', '', 'You News', '', '', '', '', '', ''],
+  ['Recharge', 'Nord', 'Paleto R', '', '', '', '', '', ''],
+  ['', '', 'Zancudo', '', '', '', '', '', ''],
+  ['', '', 'Grapeseed', '', '', '', '', '', ''],
+  ['', '', 'Sandy Shores', '', '', '', '', '', ''],
+  ['', '', 'Route 68', '', '', '', '', '', ''],
+  ['', '', 'UPW', '', '', '', '', '', ''],
+  ['', '', 'Palomino', '', '', '', '', '', ''],
+  ['', '', 'Tongva Valley', '', '', '', '', '', ''],
+  ['', 'Sud', 'Clinton', '', '', '', '', '', ''],
+  ['', '', 'Mirror Park', '', '', '', '', '', ''],
+  ['', '', 'Popular', '', '', '', '', '', ''],
+  ['', '', 'LSMC R', '', '', '', '', '', ''],
+  ['', '', 'La Puerta', '', '', '', '', '', ''],
+  ['', '', 'Auto-école', '', '', '', '', '', ''],
+  ['', '', 'Little Seoul', '', '', '', '', '', ''],
+  ['', '', 'Del Perro', '', '', '', '', '', ''],
+  ['', '', 'GOH', '', '', '', '', '', '']
+];
+
+const mergeCellsConfig = [
+  { row: 0, col: 0, rowspan: 19, colspan: 1 },
+  { row: 19, col: 0, rowspan: 20, colspan: 1 },
+  { row: 39, col: 0, rowspan: 17, colspan: 1 },
+  { row: 0, col: 1, rowspan: 5, colspan: 1 },
+  { row: 5, col: 1, rowspan: 5, colspan: 1 },
+  { row: 10, col: 1, rowspan: 4, colspan: 1 },
+  { row: 14, col: 1, rowspan: 5, colspan: 1 },
+  { row: 19, col: 1, rowspan: 8, colspan: 1 },
+  { row: 27, col: 1, rowspan: 12, colspan: 1 },
+  { row: 39, col: 1, rowspan: 8, colspan: 1 },
+  { row: 47, col: 1, rowspan: 9, colspan: 1 }
+];
+
+function getLastValue(data, row, col) {
+  for (let r = row; r >= 0; r--) {
+    if (data[r][col]) {
+      return data[r][col].toLowerCase().replace(/\s+/g, '');
+    }
+  }
+  return null;
+}
+
+function calculateTableHeight() {
+  const container = document.getElementById('hot-complex').parentElement;
+  const header = container.querySelector('.header');
+  const headerHeight = header ? header.offsetHeight : 0;
+  const padding = 20;
+  return container.clientHeight - headerHeight - padding;
+}
+
+/* ===== GESTION FIREBASE ===== */
+let saveTimeout = null;
+let isUpdatingFromFirebase = false;
+
+async function loadFromFirebase(docPath) {
+  const { doc, getDoc } = window.firestoreFunctions;
+  const docRef = doc(window.db, docPath);
+  const docSnap = await getDoc(docRef);
+  
+  if (docSnap.exists()) {
+    // Reconvertir l'objet en tableau
+    const savedData = docSnap.data().data;
+    if (savedData.rows) {
+      // Format objet -> tableau
+      return Object.values(savedData.rows);
+    }
+    return savedData;
+  }
+  return null;
+}
+
+async function saveToFirebase(docPath, data) {
+  clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(async () => {
+    try {
+      const { doc, setDoc } = window.firestoreFunctions;
+      const docRef = doc(window.db, docPath);
+      
+      // Convertir le tableau de tableaux en objet pour Firebase
+      const dataToSave = {
+        rows: data.reduce((acc, row, index) => {
+          acc[index] = row;
+          return acc;
+        }, {})
+      };
+      
+      await setDoc(docRef, { 
+        data: dataToSave,
+        updatedAt: new Date().toISOString()
+      });
+      console.log(`✅ Données sauvegardées: ${docPath}`);
+    } catch (error) {
+      console.error('❌ Erreur de sauvegarde:', error);
+    }
+  }, SAVE_DEBOUNCE);
+}
+
+/* ===== INITIALISATION ===== */
+let hotSimple, hotComplex;
+
+async function initApp() {
+  const loading = document.getElementById('loading');
+  
+  try {
+    // Charger les données
+    const paramsData = await loadFromFirebase(DOC_PARAMS) || [['', '', '', '', '']];
+    const calcData = await loadFromFirebase(DOC_CALC) || dataCalculatriceInit;
+    
+    // Si pas de données, initialiser Firebase
+    if (!await loadFromFirebase(DOC_PARAMS)) {
+      await saveToFirebase(DOC_PARAMS, paramsData);
+    }
+    if (!await loadFromFirebase(DOC_CALC)) {
+      await saveToFirebase(DOC_CALC, calcData);
+    }
+    
+    // Tableau Paramètres
+    hotSimple = new Handsontable(document.getElementById('hot-simple'), {
+      ...HANDSONTABLE_CONFIG,
+      data: paramsData,
+      colHeaders: [
+        'Énergie utilisée',
+        'Objectif (%)',
+        'Cellules Fossiles requises',
+        'Cellules Hydrauliques requises',
+        'Cellules Éoliennes requises'
+      ],
+      columns: [
+        { type: 'dropdown', source: DROPDOWN_ENERGIE },
+        { type: 'dropdown', source: DROPDOWN_OBJECTIF },
+        {}, {}, {}
+      ],
+      afterChange: (changes) => {
+        if (changes && !isUpdatingFromFirebase) {
+          saveToFirebase(DOC_PARAMS, hotSimple.getData());
+        }
+      }
+    });
+
+    // Tableau Calculatrice
+    hotComplex = new Handsontable(document.getElementById('hot-complex'), {
+      ...HANDSONTABLE_CONFIG,
+      data: calcData,
+      colHeaders: [
+        'Tournée',
+        'Zone géographique',
+        'Nom de borne',
+        'Borne à remplir',
+        'Énergie utilisée',
+        'Énergie actuelle (%)',
+        'Objectif (%)',
+        'Cellules requises',
+        'Capacité après remplissage'
+      ],
+      columns: [
+        {}, {}, {},
+        { type: 'checkbox' },
+        { type: 'dropdown', source: DROPDOWN_ENERGIE },
+        {},
+        { type: 'dropdown', source: DROPDOWN_OBJECTIF },
+        {}, {}
+      ],
+      mergeCells: mergeCellsConfig,
+      cells(row, col) {
+        const tournee = getLastValue(calcData, row, 0);
+        const zone = getLastValue(calcData, row, 1);
+        
+        if (tournee && zone) {
+          const variant = row % 2 === 0 ? 'light' : 'dark';
+          return { 
+            className: `${tournee}-${zone}-${variant} htCenter htMiddle` 
+          };
+        }
+        return { className: 'htCenter htMiddle' };
+      },
+      height: calculateTableHeight(),
+      afterChange: (changes) => {
+        if (changes && !isUpdatingFromFirebase) {
+          saveToFirebase(DOC_CALC, hotComplex.getData());
+        }
+      }
+    });
+
+    // Écouter les changements en temps réel
+    const { doc, onSnapshot } = window.firestoreFunctions;
+    
+    onSnapshot(doc(window.db, DOC_PARAMS), (doc) => {
+      if (doc.exists() && hotSimple && !isUpdatingFromFirebase) {
+        isUpdatingFromFirebase = true;
+        const savedData = doc.data().data;
+        const dataArray = savedData.rows ? Object.values(savedData.rows) : savedData;
+        hotSimple.loadData(dataArray);
+        setTimeout(() => { isUpdatingFromFirebase = false; }, 100);
+      }
+    });
+    
+    onSnapshot(doc(window.db, DOC_CALC), (doc) => {
+      if (doc.exists() && hotComplex && !isUpdatingFromFirebase) {
+        isUpdatingFromFirebase = true;
+        const savedData = doc.data().data;
+        const dataArray = savedData.rows ? Object.values(savedData.rows) : savedData;
+        hotComplex.loadData(dataArray);
+        setTimeout(() => { isUpdatingFromFirebase = false; }, 100);
+      }
+    });
+
+    loading.classList.add('hidden');
+  } catch (error) {
+    console.error('Erreur d\'initialisation:', error);
+    loading.innerHTML = '<div style="color: red; font-size: 1.2em;">Erreur de connexion à Firebase. Vérifie ta configuration.</div>';
+  }
+}
+
+// Ajuster la hauteur lors du redimensionnement
+let resizeTimeout;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimeout);
+  resizeTimeout = setTimeout(() => {
+    if (hotComplex) {
+      hotComplex.updateSettings({ height: calculateTableHeight() });
+    }
+  }, 150);
+});
+
+// Attendre que Firebase soit chargé
+const checkFirebase = setInterval(() => {
+  if (window.firebaseReady) {
+    console.log("✅ Firebase détectée, démarrage de l'app...");
+    clearInterval(checkFirebase);
+    initApp();
+  } else if (window.firebaseError) {
+    console.error("❌ Erreur Firebase:", window.firebaseError);
+    clearInterval(checkFirebase);
+    document.getElementById('loading').innerHTML = `
+      <div style="color: red; padding: 20px; text-align: center;">
+        <h2>Erreur de connexion à Firebase</h2>
+        <p>Détails: ${window.firebaseError}</p>
+        <p style="margin-top: 20px;">Vérifie que tu as bien remplacé la configuration Firebase dans le code.</p>
+        <p>Appuie sur F12 pour voir plus de détails dans la console.</p>
+      </div>
+    `;
+  }
+}, 100);
+
+// Timeout de 5 secondes
+setTimeout(() => {
+  if (!window.firebaseReady && !window.firebaseError) {
+    clearInterval(checkFirebase);
+    document.getElementById('loading').innerHTML = `
+      <div style="color: red; padding: 20px; text-align: center;">
+        <h2>Timeout de connexion Firebase</h2>
+        <p>Vérifie ta connexion internet et ta configuration Firebase.</p>
+        <p>Appuie sur F12 pour voir les détails dans la console.</p>
+      </div>
+    `;
+  }
+}, 5000);
+</script>
+
+</body>
+</html>
